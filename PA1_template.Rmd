@@ -1,25 +1,92 @@
 ---
-title: "reproducible Research: Peer Assessment 1"
+title: "Reproducible Research: Peer Assessment 1"
 output: 
   html_document:
     keep_md: true
 ---
 
 
-## Loading and preprocessing the data
+## Loading & preprocessing data
 
+```{r message = F}
+library(dplyr)
+```
 
+```{r}
+# format numeric interval (e.g. 5) as time string (e.g. "00:05")
+to_time_str <- function(number) {
+    missing_zeros <- paste(rep("0",4-nchar(number)), collapse = "")
+    padded_number <- paste0(missing_zeros, number) # pad with missing zeros
+    sub("(\\d{2})(\\d{2})", "\\1:\\2", padded_number) # add ":"
+}
+```
 
-## What is mean total number of steps taken per day?
+```{r}
+unzip("activity.zip", exdir = getwd())
+act <- "activity.csv" %>% read.csv() %>%
+    mutate(
+        date = date %>% as.Date(),
+        interval = interval %>% sapply(to_time_str) %>% factor
+    )
+str(act)
+```
 
+## Histogram of daily steps
 
+```{r}
+# calculate number of steps per day
+res <- summarize(act, daily_steps = sum(steps, na.rm = T), .by = date)
 
-## What is the average daily activity pattern?
+# plot histogram
+par(mar = c(5.1, 4.1, 1.1, 2.1))
+hist(res$daily_steps, xlab = "Daily Steps", main = "")
 
+# add mean line
+mean_value <- mean(res$daily_steps)
+mean_label <- paste("   Mean","=  ", round(mean_value))
+mean_color <- "blue"
+abline(v = mean_value, lty = 2, col = mean_color)
 
+# add median line
+median_value <- median(res$daily_steps)
+median_label <- paste("Median","=", round(median_value))
+median_color <- "red"
+abline(v = median_value, lty = 2, col = median_color)
 
-## Imputing missing values
+# add legend
+legend("topright", legend = c(mean_label, median_label), lty = 2, cex = 0.7,
+       col = c(mean_color, median_color))
 
+```
 
+## Average daily activity pattern
 
-## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+res <- summarize(act, avg_steps = mean(steps, na.rm = T), .by = interval)
+par(mar = c(5.1, 4.1, 1.1, 2.1))
+plot(avg_steps ~ interval, res, xlab = "Interval", ylab = "Average Steps")
+points(avg_steps ~ interval, res, type = "l")
+points(avg_steps ~ interval, res, type = "p", pch = 1, cex = .5, col = "coral3")
+max_point <- filter(res, avg_steps == max(avg_steps))
+text(max_point$interval, max_point$avg_steps,
+     labels = paste(round(max_point$avg_steps), "steps at", max_point$interval),
+     pos = 4, cex = 0.7)
+```
+
+## 6. Impute missing data
+
+```{r}
+
+```
+
+## 7. Histogram of the total number of steps taken each day after missing values are imputed
+
+```{r}
+
+```
+
+## 8. Are there differences in activity patterns between weekdays and weekends?
+
+```{r}
+
+```
