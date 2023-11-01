@@ -13,7 +13,7 @@ library(dplyr)
 ```
 
 ```{r}
-# format numeric interval (e.g. 5) as time string (e.g. "00:05")
+# helper function to convert intervals to time string (e.g. 5 -> "00:05")
 to_time_str <- function(number) {
     missing_zeros <- paste(rep("0",4-nchar(number)), collapse = "")
     padded_number <- paste0(missing_zeros, number) # pad with missing zeros
@@ -25,8 +25,10 @@ to_time_str <- function(number) {
 unzip("activity.zip", exdir = getwd())
 act <- "activity.csv" %>% read.csv() %>%
     mutate(
-        date = date %>% as.Date(),
-        interval = interval %>% sapply(to_time_str) %>% factor
+        date = as.Date(date),
+        interval = interval %>% sapply(to_time_str) %>% factor,
+        weekday = weekdays(date),
+        is_weekend = weekdays(date) %in% c("Saturday", "Sunday")
     )
 str(act)
 ```
@@ -39,6 +41,7 @@ res <- summarize(act, daily_steps = sum(steps, na.rm = T), .by = date)
 
 # plot histogram
 par(mar = c(5.1, 4.1, 1.1, 2.1))
+
 hist(res$daily_steps, xlab = "Daily Steps", main = "")
 
 # add mean line
@@ -62,8 +65,9 @@ legend("topright", legend = c(mean_label, median_label), lty = 2, cex = 0.7,
 ## Average daily activity pattern
 
 ```{r}
-res <- summarize(act, avg_steps = mean(steps, na.rm = T), .by = interval)
 par(mar = c(5.1, 4.1, 1.1, 2.1))
+
+res <- act %>% summarize(avg_steps = mean(steps, na.rm = T), .by = interval)
 plot(avg_steps ~ interval, res, xlab = "Interval", ylab = "Average Steps")
 points(avg_steps ~ interval, res, type = "l")
 points(avg_steps ~ interval, res, type = "p", pch = 1, cex = .5, col = "coral3")
@@ -75,8 +79,61 @@ text(max_point$interval, max_point$avg_steps,
 
 ## 6. Impute missing data
 
+Visualize missing data (in <span style="color: red;">red</span>)
 ```{r}
+par(mar = c(5.1, 4.1, 1.1, 2.1))
 
+number_of_colors <- max(na.omit(act$steps)) + 1
+colorscale <- colorRampPalette(c("lightgray", "black"))(number_of_colors)
+
+plot(date ~ interval, act,
+     xlab = "Interval", ylab = "Date",
+     col = ifelse(is.na(steps), "red", ifelse(steps == 0, 0, colorscale[steps + 1])),
+     pch = 15, cex = .2, xaxt = "n"
+     )
+axis(1, at = act$interval, as.character(act$interval), lwd.tick = .1)
+
+```
+
+There seems to be 8 completely missing days.
+
+```{r}
+dates_status <- act %>%
+    summarize(missing = is.na(all(steps)), .by = date) %>%
+    mutate(weekday = weekdays(date))
+table(select(dates_status, missing, weekday))
+missing_dates <- filter(dates_status, missing == T)
+```
+It seems we have sufficient non-missing days versus missing days (7:2).  
+We will use the average of the non-missing days to impute the missing days.
+
+```{r}
+# compute interval average for each weekday
+weekday_averages <-
+    act %>% summarize(avg_steps = median(steps, na.rm = T), .by = c(weekday, interval)) %>%
+    mutate(avg_steps = round(avg_steps))
+# loop through missing days and set their interval steps to the average for that weekday
+for (i in 1:nrow(missing_dates)) {
+    replacement <- weekday_averages %>% filter(weekday == missing_dates$weekday[i]) %>% select(avg_steps)
+    act[which(act$date == missing_dates$date[i]),1] = replacement
+}
+```
+
+Revisualize to confirm no missing data.
+
+```{r}
+par(mfrow = c(1,2), mar = c(0, 0, 1, 0))
+
+plot(date ~ interval, act_original,
+     xlab = "", ylab = "", main = "before", cex.main = 0.7,
+     col = ifelse(is.na(steps), "red", ifelse(steps == 0, 0, colorscale[steps + 1])),
+     pch = 15, cex = .2, xaxt = "n", yaxt = "n"
+     )
+plot(date ~ interval, act,
+     xlab = "", ylab = "", main = "after", cex.main = 0.7,
+     col = ifelse(is.na(steps), "red", ifelse(steps == 0, 0, colorscale[steps + 1])),
+     pch = 15, cex = .2, xaxt = "n", yaxt = "n"
+     )
 ```
 
 ## 7. Histogram of the total number of steps taken each day after missing values are imputed
