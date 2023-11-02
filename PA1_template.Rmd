@@ -23,18 +23,13 @@ colSums(is.na(act))
 
 Preprocess data
 ```{r}
-#Converts interval int to time string (e.g. 5 -> "00:05") 
-to_time_str <- function(number) {
-    missing_zeros <- paste(rep("0",4-nchar(number)), collapse = "")
-    padded_number <- paste0(missing_zeros, number) # pad with missing zeros
-    sub("(\\d{2})(\\d{2})", "\\1:\\2", padded_number) # add ":"
-}
 act <- mutate(act,
         date = as.Date(date),
-        interval = factor(sapply(interval, to_time_str)),
+        interval = factor(interval),
         weekday = weekdays(date),
         is_weekend = weekdays(date) %in% c("Saturday", "Sunday")
     )
+intervals <- levels(act$interval)
 str(act)
 ```
 
@@ -74,21 +69,25 @@ hist_steps(act)
 ## Average daily activity pattern
 
 ```{r}
-plot_daily_activity <- function(named_plots) {
-    number_of_plots <- length(named_plots)
-    par(mfrow = c(number_of_plots,1), mar = c(2, 2, 2, 2))
+to_time <- function(x) sub("(\\d\\d)$", ":\\1", x)
+x_increment <- function(hours) seq(from = 1, to = length(intervals)+1, by = 60*hours/5)
+
+plot_daily_activity <- function(plots) {
+    number_of_plots <- length(plots)
+    par(mfrow = c(number_of_plots,1), mar = c(1.5, 2.5, 2, 2), mgp = c(1.5, 0.5, 0))
     for (i in 1:number_of_plots) {
-        res <- summarize(named_plots[[i]], avg_steps = mean(steps, na.rm = T), .by = interval)
+        res <- summarize(plots[[i]], avg_steps = mean(steps, na.rm = T), .by = interval)
         plot(avg_steps ~ interval, res,
-             xlab = "Interval",
+             xlab = "",
              ylab = "Average Steps",
-             main = names(named_plots)[i],
-             cex.lab = 0.7, cex.axis = 0.7, cex.main = 0.7)
+             main = names(plots)[i],
+             cex.lab = 0.7, cex.axis = 0.7, cex.main = 0.7, xaxt = "n")
+        axis(1, at = x_increment(1), labels = to_time(intervals[x_increment(1)]), cex.axis = 0.7)
         points(avg_steps ~ interval, res, type = "l")
         points(avg_steps ~ interval, res, type = "p", pch = 1, cex = .5, col = "coral3")
         max_point <- filter(res, avg_steps == max(avg_steps))
         text(max_point$interval, max_point$avg_steps,
-             labels = paste(round(max_point$avg_steps), "steps at", max_point$interval),
+             labels = paste(round(max_point$avg_steps), "steps at", to_time(max_point$interval)),
              pos = 4, cex = 0.7)
     }
 }
@@ -107,14 +106,13 @@ number_of_colors <- max(na.omit(act$steps)) + 1
 gradient <- colorRampPalette(c("lightgray", "black"))(number_of_colors)
 colorscale <- function(x) ifelse(is.na(x), "red", ifelse(x == 0, "white", gradient[x + 1]))
 
-par(mar = c(5.1, 4.1, 1.1, 2.1))
+par(mar = c(2,2,2,2), mgp = c(0.2, 0.5, 0))
 
 plot(date ~ interval, act,
-     xlab = "Interval", ylab = "",
+     xlab = "Time", ylab = "",
      col = colorscale(steps),
-     pch = 15, cex = .2, xaxt = "n"
+     pch = 15, cex = .2, xaxt = "n", cex.axis = 0.7, cex.lab = 0.7
      )
-axis(1, at = act$interval, as.character(act$interval), lwd.tick = .1)
 ```
 
 The missing steps data seems to be located in 8 completely missing days.
@@ -145,12 +143,12 @@ impute <- function(imp_fun, act_df) {
 Revisualize to confirm no missing data.
 
 ```{r}
-plot_multiple <- function(named_plots) {
-    number_of_plots <- length(named_plots)
+plot_multiple <- function(plots) {
+    number_of_plots <- length(plots)
     par(mfrow = c(1,number_of_plots), mar = c(0, 0, 1, 0))
     for (i in 1:number_of_plots) {
-    plot(date ~ interval, named_plots[[i]],
-         xlab = "", ylab = "", main = names(named_plots)[i], cex.main = 0.7,
+    plot(date ~ interval, plots[[i]],
+         xlab = "", ylab = "", main = names(plots)[i], cex.main = 0.7,
          col = colorscale(steps),
          pch = 15, cex = .2, xaxt = "n", yaxt = "n"
          )
@@ -177,7 +175,7 @@ hist_steps(act_imp)
 ```
 
 The histogram of the imputed data (`act_imp`) looks similar to the original.  
-However the `mean` seems to have shifted from `9354` to `9705`.
+However the `mean` seems to have shifted slightly to the right.
 
 ## 8. Are there differences in activity patterns between weekdays and weekends?
 
@@ -188,3 +186,6 @@ plot_daily_activity(list(
     ))
 
 ```
+
+While weekdays have the highest average steps per interval,  
+weekends activity is more distributed throughout the day.
