@@ -78,7 +78,7 @@ hist_steps(act, "Histogram of Daily Steps")
 
 ## Average daily activity pattern
 
-```{r Average Daily Activity}
+```{r DailyActivity}
 time_axis <- function(tick_increment) {
     xticks <- seq(from = 1, to = length(intervals)+1, by = 60*tick_increment/5)
     axis(1, at = xticks, labels = intervals[xticks], cex.axis = 0.7)
@@ -109,7 +109,7 @@ plot_daily_activity(act, "Daily Activity")
 
 Visualize steps data across intervals and dates
 
-```{r Raw Data}
+```{r RawData}
 #Returns red for NA, white for 0, and lightgray to black for >0
 number_of_colors <- max(na.omit(act$steps)) + 1
 gradient <- colorRampPalette(c("lightgray", "black"))(number_of_colors)
@@ -137,7 +137,7 @@ table(select(dates_status, missing, weekday))
 missing_dates <- filter(dates_status, missing == T)
 ```
 Use the average of the non-missing days to impute the missing days.
-```{r Imputed Data}
+```{r ImputedData}
 impute <- function(imp_fun, act_df) {
     act_imp <- data.frame(act_df)
     summ <- summarize(act_imp, steps = imp_fun(steps, na.rm = T), .by = c(weekday, interval))
@@ -162,7 +162,7 @@ act_imp <- impute(median, act)
 
 ## 7. Histogram of the total number of steps taken each day after missing values are imputed
 
-```{r Histogram of Imputed Data}
+```{r Histogram_ImputedData}
 par(mfrow = c(1,2))
 hist_steps(act, "Original Data")
 hist_steps(act_imp, "Imputed Data")
@@ -172,7 +172,7 @@ The histogram of the imputed data (`act_imp`) looks similar to the original, how
 
 ## 8. Are there differences in activity patterns between weekdays and weekends?
 
-```{r Weekend versus Weekday Activity}
+```{r DailyActivity_Weekend_Weekday}
 par(mfrow = c(2,1))
 plot_daily_activity(filter(act_imp, !is_weekend), "WEEKDAY Daily Activity")
 plot_daily_activity(filter(act_imp, is_weekend), "WEEKEND Daily Activity")
