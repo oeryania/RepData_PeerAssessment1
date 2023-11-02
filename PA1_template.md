@@ -130,7 +130,7 @@ plot_daily_activity <- function(act_df, title) {
 plot_daily_activity(act, "Daily Activity")
 ```
 
-![](PA1_template_files/figure-html/Average Daily Activity-1.png)<!-- -->
+![](PA1_template_files/figure-html/DailyActivity-1.png)<!-- -->
 
 ## 6. Impute missing data
 
@@ -155,7 +155,7 @@ plot_raw <- function(act_df, title, axes = F) {
 plot_raw(act, "Raw data", axes = T)
 ```
 
-![](PA1_template_files/figure-html/Raw Data-1.png)<!-- -->
+![](PA1_template_files/figure-html/RawData-1.png)<!-- -->
 
 The missing steps data seems to be located in 8 completely missing days.
 
@@ -196,7 +196,7 @@ plot_raw(impute(mean, act), "Imputed with MEAN")
 plot_raw(impute(median, act), "Imputed with MEDIAN")
 ```
 
-![](PA1_template_files/figure-html/Imputed Data-1.png)<!-- -->
+![](PA1_template_files/figure-html/ImputedData-1.png)<!-- -->
 
 The `mean` smears the data across the intervals. The `median` looks more natural (closer to real data), so it will be used instead.
 
@@ -214,7 +214,7 @@ hist_steps(act, "Original Data")
 hist_steps(act_imp, "Imputed Data")
 ```
 
-![](PA1_template_files/figure-html/Histogram of Imputed Data-1.png)<!-- -->
+![](PA1_template_files/figure-html/Histogram_ImputedData-1.png)<!-- -->
 
 The histogram of the imputed data (`act_imp`) looks similar to the original, however the `mean` shifted slightly right.
 
@@ -227,7 +227,7 @@ plot_daily_activity(filter(act_imp, !is_weekend), "WEEKDAY Daily Activity")
 plot_daily_activity(filter(act_imp, is_weekend), "WEEKEND Daily Activity")
 ```
 
-![](PA1_template_files/figure-html/Weekend versus Weekday Activity-1.png)<!-- -->
+![](PA1_template_files/figure-html/DailyActivity_Weekend_Weekday-1.png)<!-- -->
 
 Weekdays have the highest average steps (8am-9am), and smaller peaks around 12pm, 4pm, and 6pm-7pm.  
 Weekends activity is more evenly distributed between the highest peak (around 9am) to the last peak (around 8pm).
